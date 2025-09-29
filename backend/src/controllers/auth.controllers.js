@@ -25,7 +25,7 @@ export const googleLogin = async (req, res) => {
         // If user doesn't exist, create new
         if (!user) {
             user = await User.create({
-                name,
+                fullName,
                 email,
                 picture,
                 provider: "google",
@@ -41,7 +41,7 @@ export const googleLogin = async (req, res) => {
             token: appToken,
             user: {
                 id: user._id,
-                name: user.name,
+                fullName: user.fullName,
                 email: user.email,
                 profilePic: user.picture,
             },
