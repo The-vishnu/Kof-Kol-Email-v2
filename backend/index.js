@@ -23,7 +23,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/auth", authRouts);
-app.use("/api/message", messageRoutes);
+app.use("/api/messages", messageRoutes);
 // Start Server
 app.listen(PORT, () => {
   console.log(`Server is listening on port ${PORT}`);
