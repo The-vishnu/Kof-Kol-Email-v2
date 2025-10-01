@@ -9,16 +9,21 @@ import {
   MicIcon,
   Plus,
   Check,
-  CheckCheck
+  CheckCheck,
 } from "lucide-react";
 import { ThemeContext } from "../context/ThemContext";
 import Sidebar from "./Sidebar";
 import SidebarFriendsList from "./SidebarFriendsList";
 import { useAuthStore } from "../store/useAuthStore";
-import usericon from "/assets/userIcon.png"
+import usericon from "/assets/userIcon.png";
+import { useChatStore } from "../store/useChatStore";
+import toast from "react-hot-toast";
 
-function ChatSection({selectedFriend}) {
+function ChatSection({ selectedFriend }) {
   const { authUser, checkAuth } = useAuthStore();
+  const { getMessages, messages, sendMessages, getUser, isMessagesLoading } =
+    useChatStore();
+
   const date = new Date();
   const showTime = date.toLocaleTimeString([], {
     hour: "2-digit",
@@ -33,23 +38,64 @@ function ChatSection({selectedFriend}) {
   const messagesEndRef = useRef(null);
   const { theme, toggleTheme } = useContext(ThemeContext);
 
-  const sendMessageSound = new Audio("/assets/notification5.mp3");
-
-  const handleSend = () => {
-    if (inputMessage.trim() !== "") {
-      sendMessageSound.play();
-      setSenderMessages([
-        ...SenderMessages,
-        {
-          text: inputMessage,
-          timeStamp: showTime,
-          senderId: "You",
-          isSeen: setIsSeen(false) // default false, when receiver sees it, set to true
-        },
-      ]);
-      setInputMessage("");
+  useEffect(() => {
+    if (selectedFriend?._id) {
+      getMessages(selectedFriend._id);
     }
-  };
+  }, [selectedFriend._id, getMessages]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [SenderMessages, RecevierMessaeg]);
+
+  const handleSend = async (e) => {
+  e.preventDefault();
+
+  if (!selectedFriend) {
+    toast.error("Please select a friend first!");
+    return;
+  }
+
+  if (inputMessage.trim() !== "") {
+    sendMessageSound.play();
+
+    const newMessage = {
+      text: inputMessage,
+      timeStamp: showTime,
+      senderId: authUser._id, // real logged-in user
+      receiverId: selectedFriend._id,
+      isSeen: false,
+    };
+
+    await sendMessages(newMessage); // store function me API call karega
+    setInputMessage("");
+  }
+};
+
+
+  // const handleSend = async (e) => {
+  //   // e.preventDefault();
+
+  //   try {
+  //     if (inputMessage.trim() !== "") {
+  //       sendMessageSound.play();
+  //       await sendMessages([
+  //         ...SenderMessages,
+  //         {
+  //           text: inputMessage,
+  //           timeStamp: showTime,
+  //           senderId: "You",
+  //           isSeen: setIsSeen(false), // default false, when receiver sees it, set to true
+  //         },
+  //       ]);
+  //       setInputMessage("");
+  //     }
+  //   } catch (error) {
+  //     console.log("failed to send messages: ", error);
+  //     toast.error("failed to sent message");
+  //   }
+  // };
+  const sendMessageSound = new Audio("/assets/notification5.mp3");
 
   const handleInput = (e) => {
     const textarea = textareaRef.current;
@@ -61,13 +107,12 @@ function ChatSection({selectedFriend}) {
   const handleKeyPress = (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      handleSend();
+      handleSend(e);
     }
   };
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [SenderMessages, RecevierMessaeg]);
+  if (isMessagesLoading) return <div>Loading...</div>;
+
   return (
     <>
       <div
@@ -86,7 +131,7 @@ function ChatSection({selectedFriend}) {
           {/* Profile Info */}
           <div className="flex items-center space-x-4 my-1">
             <img
-              src={ selectedFriend?.profilePic || usericon}
+              src={selectedFriend?.profilePic || usericon}
               alt="User Profile"
               className="w-12 h-12 rounded-full"
             />
@@ -134,9 +179,13 @@ function ChatSection({selectedFriend}) {
                 <span className="font-semibold">{sendermsg.senderId}</span>
                 <span>{sendermsg.timeStamp}</span>
                 {isSeen ? (
-                  <span className="text-blue-400 "><CheckCheck size={16} /></span>
+                  <span className="text-blue-400 ">
+                    <CheckCheck size={16} />
+                  </span>
                 ) : (
-                  <span className="text-gray-400"><Check size={16} /></span>
+                  <span className="text-gray-400">
+                    <Check size={16} />
+                  </span>
                 )}
               </div>
 
@@ -177,6 +226,7 @@ function ChatSection({selectedFriend}) {
           </button>
           {/* Input Field */}
           <textarea
+          ref={textareaRef}
             placeholder="Type a message..."
             value={inputMessage}
             onChange={handleInput}

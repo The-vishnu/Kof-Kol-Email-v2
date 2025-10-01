@@ -16,7 +16,7 @@ export const getUsersForSidebar = async (req, res) => {
 export const getMessagesBetweenUsers = async (req, res) => {
     // Implementation will go here
     try {
-        const { id:userToChatId } = req.params;
+        const { id: userToChatId } = req.params;
         const senderId = req.user._id;
         const messages = await Message.find({
             $or: [
@@ -35,7 +35,10 @@ export const sendMessage = async (req, res) => {
     try {
         const { text, image, } = req.body;
         const senderId = req.user._id;
-        const { id: receiverId } = req.params;
+        const receiverId = req.params.id;
+
+        const receiver = await User.findOne({ email: req.params.id });
+        if (!receiver) return res.status(404).json({ message: "User not found" });
 
         let imageUrl;
 
@@ -46,9 +49,9 @@ export const sendMessage = async (req, res) => {
 
         const newMessage = new Message({
             senderId,
-            receiverId,
+            receiverId: receiver._id,
             text,
-            image: imageUrl
+            image: imageUrl || null
         });
 
         await newMessage.save();
