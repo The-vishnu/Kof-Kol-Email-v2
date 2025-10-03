@@ -4,16 +4,17 @@ import ChatSection from "./ChatSection";
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatStore } from "../store/useChatStore";
 import { User } from "lucide-react";
-import usericon from "/assets/userIcon.png"
+import usericon from "/assets/userIcon.png";
 
 function SidebarFriendsList({ friends = [], onSelectFriend }) {
   const { authUser, checkAuth } = useAuthStore();
-  const {getUser} = useChatStore();
+  const { getUser } = useChatStore();
   const { theme } = useContext(ThemeContext);
   const [selectedFriend, setSelectedFriend] = useState(null);
 
-
   const handleSelect = (selectedFriend) => {
+    console.log("Selected friend object:", selectedFriend);
+    console.log("Selected friend _id:", selectedFriend?._id);
     setSelectedFriend(selectedFriend);
     onSelectFriend(selectedFriend); // notify parent
   };
@@ -26,7 +27,7 @@ function SidebarFriendsList({ friends = [], onSelectFriend }) {
           onClick={() => handleSelect(friend)}
           className={`flex justify-between items-center w-full p-2 mb-1 rounded-lg cursor-pointer transition-all
           ${
-            selectedFriend === friend._id
+            selectedFriend?._id === friend._id
               ? theme === "light"
                 ? "bg-gray-300"
                 : "bg-gray-600"
@@ -43,8 +44,12 @@ function SidebarFriendsList({ friends = [], onSelectFriend }) {
               className="w-12 h-12 rounded-full"
             />
             <div className="flex flex-col">
-              <span className="font-semibold text-[14px]">{friend.fullName}</span>
-              <span className="font-semibold text-gray-500 text-[10px]">{friend.email}</span>
+              <span className="font-semibold text-[14px]">
+                {friend.fullName}
+              </span>
+              <span className="font-semibold text-gray-500 text-[10px]">
+                {friend.email}
+              </span>
             </div>
           </div>
 

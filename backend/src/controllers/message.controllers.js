@@ -1,11 +1,13 @@
 import User from "../models/users.models.js";
 import { v2 as cloudinary } from "cloudinary";
 import Message from "../models/message.model.js";
+import Conversation from "../models/converation.model.js";
+import mongoose from "mongoose";
 
 export const getUsersForSidebar = async (req, res) => {
     try {
         const loggedInUserId = req.user._id;
-        const filteredUsers = await User.find({ _id: { $ne: loggedInUserId } }).select("-password -_id -__v -createdAt -updatedAt");
+        const filteredUsers = await User.find({ _id: { $ne: loggedInUserId } }).select("-password -__v -createdAt -updatedAt");
         res.status(200).json(filteredUsers);
     } catch (error) {
         console.error("Error fetching users for sidebar:", error);
@@ -34,10 +36,13 @@ export const getMessagesBetweenUsers = async (req, res) => {
 export const sendMessage = async (req, res) => {
     try {
         const { text, image, } = req.body;
-        const senderId = req.user._id;
-        const receiverId = req.params.id;
+        const senderId = req.user?._id;
+        console.log("req.user:", req.user);
+        if (!senderId) return res.status(400).json({ message: "Sender not authenticated" });
 
-        const receiver = await User.findOne({ email: req.params.id });
+        // const receiverId = req.params.id;
+
+        const receiver = await User.findOne({ _id: req.params.id });
         if (!receiver) return res.status(404).json({ message: "User not found" });
 
         let imageUrl;
@@ -47,11 +52,25 @@ export const sendMessage = async (req, res) => {
         //     imageUrl = uploadResponse.secure_url;
         // }
 
+        let conversation = await Conversation.findOne({
+            members: { $all: [senderId, receiver._id] }
+        });
+
+        if (!conversation) {
+            conversation = new Conversation({
+                members: [senderId, receiver._id]
+            });
+            await conversation.save();
+        }
+
+
         const newMessage = new Message({
             senderId,
             receiverId: receiver._id,
             text,
-            image: imageUrl || null
+            image: imageUrl || null,
+            conversationId: conversation._id,
+
         });
 
         await newMessage.save();

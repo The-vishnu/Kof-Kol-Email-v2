@@ -41,6 +41,7 @@ function ChatSection({ selectedFriend }) {
   useEffect(() => {
     if (selectedFriend?._id) {
       getMessages(selectedFriend._id);
+      console.log("fetching messages for:", selectedFriend._id);
     }
   }, [selectedFriend._id, getMessages]);
 
@@ -62,16 +63,18 @@ function ChatSection({ selectedFriend }) {
     const newMessage = {
       text: inputMessage,
       timeStamp: showTime,
-      senderId: authUser._id, // real logged-in user
+      senderId: "you", // real logged-in user
       receiverId: selectedFriend._id,
       isSeen: false,
     };
+
+    setSenderMessages((prevMessages) => [...prevMessages, newMessage]);
+    console.log("selectedFriend._id:", selectedFriend._id);
 
     await sendMessages(newMessage); // store function me API call karega
     setInputMessage("");
   }
 };
-
 
   // const handleSend = async (e) => {
   //   // e.preventDefault();
@@ -111,7 +114,6 @@ function ChatSection({ selectedFriend }) {
     }
   };
 
-  if (isMessagesLoading) return <div>Loading...</div>;
 
   return (
     <>
