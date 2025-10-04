@@ -17,10 +17,12 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuthStore } from "./store/useAuthStore";
 
 function App() {
-  const { authUser, checkAuth } = useAuthStore();
+  const { authUser, checkAuth, onlineUsers } = useAuthStore();
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
+
+  console.log("Online Users:", { onlineUsers });
 
   console.log("Authenticated User:", { authUser });
   const [selectedFriend, setSelectedFriend] = useState(null);

@@ -5,8 +5,10 @@ import messageRoutes from "./src/routes/message.route.js"
 import { connectDB } from "./src/lib/db.js";
 import cookieParser from "cookie-parser";
 import cors from "cors";
+import { io, server, app } from "./src/lib/socket.js";
+
 dotenv.config();
-const app = express();
+
 const PORT = process.env.PORT || 8000;
 
 // Middleware to parse JSON request body
@@ -19,13 +21,13 @@ app.use(cors({
 
 // Basic Route
 app.get("/", (req, res) => {
-  res.send("Welcome to the Dragon Chat App 🐉");
+  res.send("Welcome to Kof-Kol 🐉");
 });
 
 app.use("/api/auth", authRouts);
 app.use("/api/messages", messageRoutes);
 // Start Server
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server is listening on port ${PORT}`);
   connectDB();
 });

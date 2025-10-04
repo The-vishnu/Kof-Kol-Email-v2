@@ -20,14 +20,14 @@ export const googleLogin = async (req, res) => {
         const { email, name, picture } = payload;
 
         // Check if user exists
-        let user = await User.findOne({ email });
+        let user = await User.findOne({ email: payload.email });
 
         // If user doesn't exist, create new
         if (!user) {
             user = await User.create({
-                fullName,
+                fullName: name,
                 email,
-                picture,
+                profilePic: picture || "",
                 provider: "google",
             });
         }
@@ -40,10 +40,10 @@ export const googleLogin = async (req, res) => {
             success: true,
             token: appToken,
             user: {
-                id: user._id,
+                _id: user._id,
                 fullName: user.fullName,
                 email: user.email,
-                profilePic: user.picture,
+                profilePic: user.profilePic,
             },
         });
 

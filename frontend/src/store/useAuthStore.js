@@ -1,12 +1,17 @@
 import {create} from "zustand";
 import { axiosInstance } from "../lib/axios.js";
 import toast from "react-hot-toast";
+import { io } from "socket.io-client";
 
-export const useAuthStore = create((set) =>({
+const BASE_URL = "http://localhost:5000";
+
+export const useAuthStore = create((set, get) =>({
     authUser: null,
     isSigningUp: false,
     isLogging: false,
     isAuthChecking: true,
+    onlineUsers: [],
+    socket: null,
 
     checkAuth: async () => {
         try {
@@ -14,6 +19,7 @@ export const useAuthStore = create((set) =>({
             const data = await res.data;
             console.log("Auth checking response:", data);
             set({ authUser: data });
+            get().connectSocket();
         } catch (error) {
             console.log("Auth check failed:", error);
             set({ authUser: null });
@@ -21,6 +27,25 @@ export const useAuthStore = create((set) =>({
             set({ isAuthChecking: false });
         }
     },
+
+    connectSocket: () => {
+        const { authUser } = get();
+
+        if (!authUser || get().socket?.connected) return;
+        const socket = io(BASE_URL);
+        socket.connect();
+
+        set({ socket: socket});
+
+        socket.on("getOnlineUsers", (usersIds) => {
+            set({ onlineUsers: usersIds });
+        })
+    },
+
+    disconnectSocket: () => {
+        if(get().socket?.connected) get().socket.disconnect();
+    },
+
     signUp: async (data) => {
         set({ isSigningUp: true });
         try {
@@ -28,6 +53,7 @@ export const useAuthStore = create((set) =>({
             const user = await res.data;
             set({ authUser: user });
             toast.success("Sign up successful!");
+            get().connectSocket();
         } catch (error) {
             toast.error(error.response?.data?.message || "Sign up failed. Please try again.");
             console.log("Sign up failed:", error);
@@ -43,6 +69,7 @@ export const useAuthStore = create((set) =>({
             const user = await res.data;
             set({ authUser: user });
             toast.success("Login successful!");
+            get().connectSocket();
         } catch (error) {
             toast.error(error.response?.data?.message || "Login failed. Please try again.");
             console.log("Login failed:", error);
