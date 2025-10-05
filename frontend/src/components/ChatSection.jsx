@@ -10,6 +10,8 @@ import {
   Plus,
   Check,
   CheckCheck,
+  Copy,
+  Pen,
 } from "lucide-react";
 import { ThemeContext } from "../context/ThemContext";
 import Sidebar from "./Sidebar";
@@ -29,6 +31,7 @@ function ChatSection({ selectedFriend }) {
     isMessagesLoading,
     subscribeToMessages,
     unsubscribeFromMessages,
+    onlineUsers,
   } = useChatStore();
 
   const date = new Date();
@@ -36,13 +39,10 @@ function ChatSection({ selectedFriend }) {
     hour: "2-digit",
     minute: "2-digit",
   });
-  const [SenderMessages, setSenderMessages] = useState([]);
-  const [ReceiverMessages, setReceiverMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState("");
-  const [isSeen, setIsSeen] = useState();
   const textareaRef = useRef(null);
-  const [isActive, setActiveStatus] = useState(true);
   const messagesEndRef = useRef(null);
+  const textCopyRef = useRef(null);
   const { theme, toggleTheme } = useContext(ThemeContext);
 
   useEffect(() => {
@@ -64,7 +64,25 @@ function ChatSection({ selectedFriend }) {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [SenderMessages, ReceiverMessages]);
+  }, [messages]);
+
+  useEffect(() => {
+    const socket = useAuthStore.getState().socket;
+    // notification will play when reciver send message
+
+    const handleIncomingMessage = (messages) => {
+      if (messages.receiverId === authUser._id) {
+        const recieveSound = new Audio("/assets/notification2.mp3");
+        recieveSound.play();
+      }
+    };
+
+    socket.on("newMessage", handleIncomingMessage);
+
+    return () => {
+      socket.off("newMessage", handleIncomingMessage);
+    };
+  }, [authUser._id]);
 
   const handleSend = async (e) => {
     e.preventDefault();
@@ -80,19 +98,25 @@ function ChatSection({ selectedFriend }) {
       const newMessage = {
         text: inputMessage,
         timeStamp: showTime,
-        senderId: "you", // real logged-in user
+        senderId: authUser._id, // real logged-in user
         receiverId: selectedFriend._id,
         isSeen: false,
       };
 
-      setSenderMessages((prevMessages) => [...prevMessages, newMessage]);
-      setReceiverMessages(
-        messages.filter((msg) => msg.senderId === selectedFriend._id)
-      );
       console.log("selectedFriend._id:", selectedFriend._id);
 
       await sendMessages(newMessage); // store function me API call karega
       setInputMessage("");
+    }
+  };
+
+  const handleCopyText = () => {
+    const textToCopy = navigator.clipboard.writeText(msg.text);
+    if (textToCopy) {
+      navigator.clipboard.writeText(textToCopy);
+      toast.success("Text copied to clipboard!");
+    } else {
+      toast.error("No text to copy!");
     }
   };
 
@@ -162,13 +186,7 @@ function ChatSection({ selectedFriend }) {
                 <span>{selectedFriend?.fullName || "Unknown User"}</span>
                 <span className="absolute -bottom-1 right-0 w-0 transition-all h-0.5 bg-gray-400 group-hover:w-full"></span>
               </p>
-              <span
-                className={`text-sm ${
-                  isActive ? "text-green-400" : "text-gray-400"
-                }`}
-              >
-                {isActive ? "online" : "offline"}
-              </span>{" "}
+
               {/* Green for Online, Gray for Offline */}
             </div>
           </div>
@@ -191,47 +209,71 @@ function ChatSection({ selectedFriend }) {
           </div>
         </div>
         {/* Messages Area */}
-        <div className="flex flex-col space-y-4 overflow-auto flex-1 hide-scrollbar">
-          {/* Sent Message (User → Bot) */}
-          {SenderMessages.map((sendermsg, map) => (
-            <div className="flex flex-col items-end">
-              {/* Username + Time */}
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <span className="font-semibold">{sendermsg.senderId}</span>
-                <span>{sendermsg.timeStamp}</span>
-                {isSeen ? (
-                  <span className="text-blue-400 ">
-                    <CheckCheck size={16} />
+
+        <div className="flex flex-col space-y-4 w-full overflow-auto flex-1 hide-scrollbar p-1.5">
+          {messages.map((msg, index) => {
+            const isSender = msg.senderId === authUser._id; // logged-in user ke messages right side
+            return (
+              <div
+                key={index}
+                className={`flex flex-col ${
+                  isSender ? "items-end" : "items-start"
+                }`}
+              >
+                {/* Username + Time */}
+                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                  <span className="font-semibold">
+                    {isSender ? "You" : selectedFriend.fullName}
                   </span>
-                ) : (
-                  <span className="text-gray-400">
-                    <Check size={16} />
+                  <span>
+                    {msg.timeStamp ||
+                      new Date(msg.createdAt).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                   </span>
-                )}
-              </div>
 
-              {/* Message Bubble */}
-              <div className="bg-gray-300 p-3 rounded-3xl rounded-tr-none max-w-[660px] break-words whitespace-pre-wrap">
-                {sendermsg.text}
-              </div>
-            </div>
-          ))}
+                  {/* ✅ Only sender ke liye ticks */}
+                  {isSender &&
+                    (msg.isSeen ? (
+                      <CheckCheck size={16} className="text-blue-400" />
+                    ) : (
+                      <Check size={16} className="text-gray-400" />
+                    ))}
+                </div>
 
-          {/* Received Message (Bot → User) */}
-          {ReceiverMessages.map((recMasg, map) => (
-            <div className="flex flex-col items-end">
-              {/* Username + Time */}
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <span className="font-semibold">{recMasg.senderId}</span>
-                <span>{recMasg.timeStamp}</span>
+                {/* Message Bubble */}
+                <div
+                  className={`p-3 rounded-3xl max-w-[660px] break-words whitespace-pre-wrap ${
+                    isSender
+                      ? "bg-gray-300 rounded-tr-[3px]" // sender → right
+                      : "bg-gray-300 rounded-tl-[3px]" // receiver → left
+                  }`}
+                >
+                  {msg.text}
+                </div>
+                <div
+                  className={`w-6 h-3 flex flex-row gap-2 ml-1 justify-center`}
+                >
+                  <span>
+                    <Copy
+                      size={14}
+                      className="text-gray-400 cursor-pointer"
+                      onClick={() => {
+                        navigator.clipboard.writeText(msg.text);
+                        toast.success("Text copied to clipboard!");
+                      }}
+                    />
+                  </span>
+                  <span>
+                    <Pen size={14} className="text-gray-400 cursor-pointer" onClick={() => {
+                      
+                    }} />
+                  </span>
+                </div>
               </div>
-
-              {/* Message Bubble */}
-              <div className="bg-gray-300 p-3 rounded-3xl rounded-tr-none max-w-[660px] break-words whitespace-pre-wrap">
-                {recMasg.text}
-              </div>
-            </div>
-          ))}
+            );
+          })}
           <div ref={messagesEndRef}></div>
         </div>
 

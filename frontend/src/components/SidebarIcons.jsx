@@ -158,7 +158,7 @@ function SidebarIcons({ onSelectView }) {
                   theme === "light" ? "text-gray-400" : "text-gray-700"
                 }`}
               />
-              <p className="text-sm text-gray-400">example@gmail.com</p>
+              <p className="text-sm text-gray-400">{authUser.email}</p>
             </div>
             <div className="flex flex-row gap-2 cursor-pointer items-center">
               <SunMoon

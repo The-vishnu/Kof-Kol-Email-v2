@@ -27,7 +27,9 @@ export const getMessagesBetweenUsers = async (req, res) => {
                 { senderId: senderId, receiverId: userToChatId },
                 { senderId: userToChatId, receiverId: senderId }
             ]
-        })
+        }).sort({ createdAt: 1 });
+
+        res.status(200).json(messages);
     } catch (error) {
         console.error("Error fetching messages between users:", error);
         res.status(500).json({ message: "Internal server error" });
