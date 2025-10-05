@@ -2,7 +2,9 @@ import User from "../models/users.models.js";
 import { v2 as cloudinary } from "cloudinary";
 import Message from "../models/message.model.js";
 import Conversation from "../models/converation.model.js";
-import mongoose from "mongoose";
+import mongoose, { get } from "mongoose";
+import { getReceiverSocketId } from "../lib/socket.js"
+import { io } from "../lib/socket.js";
 
 export const getUsersForSidebar = async (req, res) => {
     try {
@@ -75,6 +77,11 @@ export const sendMessage = async (req, res) => {
 
         await newMessage.save();
         // Emit the message via Socket.io
+        const receiverSocketId = getReceiverSocketId(receiver._id);
+        if(receiverSocketId){
+            io.to(receiverSocketId).emit("newMessage", newMessage);
+        }
+
         res.status(201).json(newMessage);
     } catch (error) {
         console.error("Error sending message:", error);

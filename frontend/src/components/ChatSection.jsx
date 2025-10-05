@@ -21,8 +21,15 @@ import toast from "react-hot-toast";
 
 function ChatSection({ selectedFriend }) {
   const { authUser, checkAuth } = useAuthStore();
-  const { getMessages, messages, sendMessages, getUser, isMessagesLoading } =
-    useChatStore();
+  const {
+    getMessages,
+    messages,
+    sendMessages,
+    getUser,
+    isMessagesLoading,
+    subscribeToMessages,
+    unsubscribeFromMessages,
+  } = useChatStore();
 
   const date = new Date();
   const showTime = date.toLocaleTimeString([], {
@@ -30,7 +37,7 @@ function ChatSection({ selectedFriend }) {
     minute: "2-digit",
   });
   const [SenderMessages, setSenderMessages] = useState([]);
-  const [RecevierMessaeg, setRecevierMessage] = useState([]);
+  const [ReceiverMessages, setReceiverMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState("");
   const [isSeen, setIsSeen] = useState();
   const textareaRef = useRef(null);
@@ -41,40 +48,53 @@ function ChatSection({ selectedFriend }) {
   useEffect(() => {
     if (selectedFriend?._id) {
       getMessages(selectedFriend._id);
+
+      subscribeToMessages();
       console.log("fetching messages for:", selectedFriend._id);
+      return () => {
+        unsubscribeFromMessages();
+      };
     }
-  }, [selectedFriend._id, getMessages]);
+  }, [
+    selectedFriend._id,
+    getMessages,
+    subscribeToMessages,
+    unsubscribeFromMessages,
+  ]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [SenderMessages, RecevierMessaeg]);
+  }, [SenderMessages, ReceiverMessages]);
 
   const handleSend = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (!selectedFriend) {
-    toast.error("Please select a friend first!");
-    return;
-  }
+    if (!selectedFriend) {
+      toast.error("Please select a friend first!");
+      return;
+    }
 
-  if (inputMessage.trim() !== "") {
-    sendMessageSound.play();
+    if (inputMessage.trim() !== "") {
+      sendMessageSound.play();
 
-    const newMessage = {
-      text: inputMessage,
-      timeStamp: showTime,
-      senderId: "you", // real logged-in user
-      receiverId: selectedFriend._id,
-      isSeen: false,
-    };
+      const newMessage = {
+        text: inputMessage,
+        timeStamp: showTime,
+        senderId: "you", // real logged-in user
+        receiverId: selectedFriend._id,
+        isSeen: false,
+      };
 
-    setSenderMessages((prevMessages) => [...prevMessages, newMessage]);
-    console.log("selectedFriend._id:", selectedFriend._id);
+      setSenderMessages((prevMessages) => [...prevMessages, newMessage]);
+      setReceiverMessages(
+        messages.filter((msg) => msg.senderId === selectedFriend._id)
+      );
+      console.log("selectedFriend._id:", selectedFriend._id);
 
-    await sendMessages(newMessage); // store function me API call karega
-    setInputMessage("");
-  }
-};
+      await sendMessages(newMessage); // store function me API call karega
+      setInputMessage("");
+    }
+  };
 
   // const handleSend = async (e) => {
   //   // e.preventDefault();
@@ -113,7 +133,6 @@ function ChatSection({ selectedFriend }) {
       handleSend(e);
     }
   };
-
 
   return (
     <>
@@ -199,17 +218,17 @@ function ChatSection({ selectedFriend }) {
           ))}
 
           {/* Received Message (Bot → User) */}
-          {RecevierMessaeg.map((RecevierMessaeg, map) => (
+          {ReceiverMessages.map((recMasg, map) => (
             <div className="flex flex-col items-end">
               {/* Username + Time */}
               <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <span className="font-semibold">Arvind</span>
-                <span>10:45 AM</span>
+                <span className="font-semibold">{recMasg.senderId}</span>
+                <span>{recMasg.timeStamp}</span>
               </div>
 
               {/* Message Bubble */}
               <div className="bg-gray-300 p-3 rounded-3xl rounded-tr-none max-w-[660px] break-words whitespace-pre-wrap">
-                {RecevierMessaeg}
+                {recMasg.text}
               </div>
             </div>
           ))}
@@ -228,7 +247,7 @@ function ChatSection({ selectedFriend }) {
           </button>
           {/* Input Field */}
           <textarea
-          ref={textareaRef}
+            ref={textareaRef}
             placeholder="Type a message..."
             value={inputMessage}
             onChange={handleInput}

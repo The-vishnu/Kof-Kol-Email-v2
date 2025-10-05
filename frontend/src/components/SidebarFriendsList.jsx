@@ -7,7 +7,7 @@ import { User } from "lucide-react";
 import usericon from "/assets/userIcon.png";
 
 function SidebarFriendsList({ friends = [], onSelectFriend }) {
-  const { authUser, checkAuth } = useAuthStore();
+  const { authUser, checkAuth, onlineUsers } = useAuthStore();
   const { getUser } = useChatStore();
   const { theme } = useContext(ThemeContext);
   const [selectedFriend, setSelectedFriend] = useState(null);
@@ -38,6 +38,7 @@ function SidebarFriendsList({ friends = [], onSelectFriend }) {
         >
           {/* Left: Avatar + Name */}
           <div className="flex items-center gap-3">
+            <span className={`w-2.5 h-2.5 rounded-full absolute mb-9 ml-2 ${onlineUsers.includes(friend._id) ? "bg-green-500" : "bg-gray-300"}`}></span>
             <img
               src={friend.profilePic || usericon}
               alt="User"
