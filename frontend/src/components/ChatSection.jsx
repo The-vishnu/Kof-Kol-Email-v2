@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { ThemeContext } from "../context/ThemContext";
 import Sidebar from "./Sidebar";
+import TypingIndicator from "./skeletons/TypingIndicator";
 import SidebarFriendsList from "./SidebarFriendsList";
 import { useAuthStore } from "../store/useAuthStore";
 import usericon from "/assets/userIcon.png";
@@ -32,6 +33,9 @@ function ChatSection({ selectedFriend }) {
     subscribeToMessages,
     unsubscribeFromMessages,
     onlineUsers,
+    isTyping,
+    setIsTyping,
+    stopTyping,
   } = useChatStore();
 
   const date = new Date();
@@ -41,6 +45,8 @@ function ChatSection({ selectedFriend }) {
   });
   const [inputMessage, setInputMessage] = useState("");
   const textareaRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
+  const socket = useAuthStore.getState().socket;
   const messagesEndRef = useRef(null);
   const textCopyRef = useRef(null);
   const { theme, toggleTheme } = useContext(ThemeContext);
@@ -65,6 +71,25 @@ function ChatSection({ selectedFriend }) {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+
+    console.log("typing...");
+    socket.on("typing", ({ senderId }) => {
+      setIsTyping(senderId);
+    });
+
+    console.log("stop typing...");
+
+    socket.on("stopTyping", ({ senderId }) => {
+      stopTyping(senderId);
+    });
+
+    return () => {
+      socket.off("typing");
+      socket.off("stopTyping");
+    };
+  }, [setIsTyping, stopTyping]);
 
   useEffect(() => {
     const socket = useAuthStore.getState().socket;
@@ -110,16 +135,6 @@ function ChatSection({ selectedFriend }) {
     }
   };
 
-  const handleCopyText = () => {
-    const textToCopy = navigator.clipboard.writeText(msg.text);
-    if (textToCopy) {
-      navigator.clipboard.writeText(textToCopy);
-      toast.success("Text copied to clipboard!");
-    } else {
-      toast.error("No text to copy!");
-    }
-  };
-
   // const handleSend = async (e) => {
   //   // e.preventDefault();
 
@@ -149,6 +164,23 @@ function ChatSection({ selectedFriend }) {
     setInputMessage(e.target.value);
     textarea.style.height = "auto"; // reset height
     textarea.style.height = textarea.scrollHeight + "px"; // set to content height
+
+    // Typing indicator logic
+    socket.emit("typing", {
+      senderId: authUser._id,
+      receiverId: selectedFriend._id,
+    });
+
+    // Clear old timeout
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+
+    // Set new timeout
+    typingTimeoutRef.current = setTimeout(() => {
+      socket.emit("stopTyping", {
+        senderId: authUser._id,
+        receiverId: selectedFriend._id,
+      });
+    }, 2000);
   };
 
   const handleKeyPress = (e) => {
@@ -266,14 +298,21 @@ function ChatSection({ selectedFriend }) {
                     />
                   </span>
                   <span>
-                    <Pen size={14} className="text-gray-400 cursor-pointer" onClick={() => {
-                      
-                    }} />
+                    <Pen
+                      size={14}
+                      className="text-gray-400 cursor-pointer"
+                      onClick={() => {}}
+                    />
                   </span>
                 </div>
               </div>
             );
           })}
+          <div>
+            {isTyping[selectedFriend._id] && (
+              <span className="text-gray-400 animate-pulse">typing...</span>
+            )}
+          </div>
           <div ref={messagesEndRef}></div>
         </div>
 

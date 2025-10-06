@@ -5,7 +5,8 @@ import { useAuthStore } from "./useAuthStore.js";
 
 export const useChatStore = create((set, get) => ({
     messages: [],
-    users: [],  
+    users: [],
+    isTyping: {},
     isUserLoading: false,
     isMessagesLoading: false,
     selectedFriend: null,
@@ -26,7 +27,7 @@ export const useChatStore = create((set, get) => ({
         const { selectedFriend, messages } = get();
         try {
             const res = await axiosInstance.post(`/messages/send/${selectedFriend._id}`, messagesData);
-            set({messages: [...messages, res.data]});
+            set({ messages: [...messages, res.data] });
 
         } catch (error) {
             toast.error(error.response.data.message);
@@ -49,7 +50,7 @@ export const useChatStore = create((set, get) => ({
 
     subscribeToMessages: () => {
         const { selectedFriend } = get();
-        if(!selectedFriend) return;
+        if (!selectedFriend) return;
 
         const socket = useAuthStore.getState().socket;
 
@@ -61,5 +62,17 @@ export const useChatStore = create((set, get) => ({
     unsubscribeFromMessages: () => {
         const socket = useAuthStore.getState().socket;
         socket.off("newMessage");
+    },
+
+    setIsTyping: (userId) => {
+        set((state) => ({
+            isTyping: { ...state.isTyping, [userId]: true }
+        }))
+    },
+
+    stopTyping: (userId) => {
+        set((state) => ({
+            isTyping: { ...state.isTyping, [userId]: false }
+        }))
     }
 }));
