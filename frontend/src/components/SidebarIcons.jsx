@@ -14,6 +14,8 @@ import {
   PenBoxIcon,
 } from "lucide-react";
 import { ThemeContext } from "../context/ThemContext";
+import { Link } from "react-router-dom";
+import AiChat from "../pages/AiChat";
 import KofKol from "../assets/Kof-Kol.png";
 import { useAuthStore } from "../store/useAuthStore";
 
@@ -94,12 +96,14 @@ function SidebarIcons({ onSelectView }) {
           Archive
         </span>
       </div>
-      {/* Home */}
+      {/* AI */}
       <div className="relative group">
-        <Cpu
-          size={35}
-          className="cursor-pointer p-2 rounded-lg  transition-all duration-200"
-        />
+        <Link to="/aichat">
+          <Cpu
+            size={35}
+            className="cursor-pointer p-2 rounded-lg  transition-all duration-200"
+          />
+        </Link>
         <span
           className={`absolute left-full top-1/2 -translate-y-1/2 ml-3 bg-gray-400 text-sm px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap ${
             theme === "light" ? "text-gray-700" : "text-gray-300"
@@ -158,7 +162,7 @@ function SidebarIcons({ onSelectView }) {
                   theme === "light" ? "text-gray-400" : "text-gray-700"
                 }`}
               />
-              <p className="text-sm text-gray-400">{authUser.email}</p>
+              <p className="text-sm text-gray-400">{}</p>
             </div>
             <div className="flex flex-row gap-2 cursor-pointer items-center">
               <SunMoon

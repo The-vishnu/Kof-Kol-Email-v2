@@ -74,12 +74,9 @@ function ChatSection({ selectedFriend }) {
 
   useEffect(() => {
 
-    console.log("typing...");
     socket.on("typing", ({ senderId }) => {
       setIsTyping(senderId);
     });
-
-    console.log("stop typing...");
 
     socket.on("stopTyping", ({ senderId }) => {
       stopTyping(senderId);
@@ -97,7 +94,7 @@ function ChatSection({ selectedFriend }) {
 
     const handleIncomingMessage = (messages) => {
       if (messages.receiverId === authUser._id) {
-        const recieveSound = new Audio("/assets/notification2.mp3");
+        const recieveSound = new Audio("/assets/notification3.mp3");
         recieveSound.play();
       }
     };

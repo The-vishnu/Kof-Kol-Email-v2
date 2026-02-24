@@ -86,7 +86,7 @@ function App() {
             <Route path="/trash" element={<Trash />} />
             <Route path="/aichat" element={<AiChat />} />
           </Routes>
-          <Toaster  />
+          <Toaster />
         </div>
       </ThemeContext.Provider>
     </>
